@@ -1,0 +1,10 @@
+Install Kubernetes from 2 scripts with bash on centos 7
+
+Run 
+chmod 775 centos7_kubernetes_install_step_01.sh
+chmod 775 centos7_kubernetes_install_step_02.sh
+
+Run Firts
+./centos7_kubernetes_install_step_01.sh
+Run Second
+./centos7_kubernetes_install_step_02.sh

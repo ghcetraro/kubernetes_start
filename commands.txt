@@ -1,0 +1,188 @@
+--comandos generales
+kubectl describe - show detailed information about a resource
+kubectl logs - print the logs from a container in a pod
+kubectl exec - execute a command on a container in a pod
+
+--sobre nodos
+kubectl get nodes -o=jsonpath=$'{range .items[*]}{@.metadata.name}: {@.status.nodeInfo.kubeletVersion}\n{end}'
+kubectl get nodes -o=jsonpath=$'{range .items[*]}{@.metadata.name}: {@.status.nodeInfo.containerRuntimeVersion}\n{end}'
+kubectl get nodes -o=jsonpath=$'{range .items[*]}{@.metadata.name}: {.status.conditions[?(@.reason=="KubeletReady")].message}\n{end}'
+
+--ver la version de kebernetes
+kubectl version
+
+--cargar las credenciales de kubernetes
+kubectl config current-context
+
+--mostrar todos los names spaces
+kubectl get namespaces
+
+--mostar todos los pods 
+kubectl get pods --all-namespaces
+
+--mostrar los servicios de un deploy
+kubectl get services -n portal-aysa
+
+--ver todos los servicios de todos los name spaces
+kubectl get services --all-namespaces
+
+--ver el cluster
+kubectl get services
+
+--ver los nodos de un cluster
+kubectl get nodes
+
+--ver mas datos del cluster
+kubectl describe service kubernetes
+
+--ver los logs de un pods
+kubectl -n portal-aysa logs backoffice-entry-7dbb5cc496-jp66j
+
+--ver los logs de un pods de un periodo en especial
+kubectl -n portal-aysa logs (insertando el nombre copiado) --since 2h
+
+kubectl -n portal-aysa logs backoffice-entry-7dbb5cc496-jp66j --since 2h
+
+--sacar el ide para ver logs con 
+kubectl get pods --all-namespaces
+
+--borrar un pods
+ kubectl delete pod backoffice-entry-7dbb5cc496-jp66j --now
+ 
+--borrar todos los pods
+kubectl -n portal-aysa delete pods --all
+
+--hacer un depploy desde un archivo
+kubectl -f apply env.yaml
+
+--borrar un deploy desde un archivo
+kubectl delete -f env.yaml
+
+--ver la lista de deployments
+kubectl --namespace kube-system get deployment
+
+--mas informacion
+kubectl --namespace kube-system get rs
+
+--borrar un deploymeny
+kubectl delete deployment kubernetes-dashboard --namespace=kube-system 
+
+--borrar un servicio
+kubectl delete service kubernetes-dashboard  --namespace=kube-system 
+
+--borrar un rol
+kubectl delete role kubernetes-dashboard-minimal --namespace=kube-system 
+
+--borrar un rolebinding
+kubectl delete rolebinding kubernetes-dashboard-minimal --namespace=kube-system
+
+--borrar un sa
+kubectl delete sa kubernetes-dashboard --namespace=kube-system 
+
+--borrar un secret
+kubectl delete secret kubernetes-dashboard-certs --namespace=kube-system
+
+--entrar a un pod
+kubectl exec -it shell-demo -- /bin/bash
+
+kubectl exec -it -n portal-aysa public-api-6ffd8684db-td4tb -- /bin/bash
+
+*IMPORTANTE: para entrar hay que poner el tipo de consola que tiene: je: sh, bash, etc
+
+--listar las variables de entorno de un pod
+kubectl exec shell-demo env
+
+--hacer un deploy como servicio
+kubectl run aspnetapp --image=mcr.microsoft.com/dotnet/core/samples:aspnetapp  --port=80 --replicas=2
+
+*ver el servicio
+kubectl get services
+
+--exponer un pod por un puerto aleatorio
+kubectl expose deployment aspnetapp --type=NodePort
+
+--ver monitor de consola del los nodos
+watch -n 2 -x kubectl get nodes -owide
+
+--ver monitor de consola del los pods
+watch -n2 -x kubectl get pods --all-namespaces -owide
+
+--escalar un servicio en varias replicas
+kubectl scale deployment nginx-ecommerce --replicas=2
+
+--ver todas las replicas set
+kubectl get rs --all-namespaces
+
+--crear un nuevo namespace
+Crea un nuevo Namespaces
+//////
+Para crear un namespace, crea un fichero YAML como el siguiente: ns-developers.yaml
+
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: development
+  labels:
+    name: development
+////////
+Para crear el namespace, ejecuta:
+
+kubectl create -f ns-developers.yaml
+
+--Observa con detalle el namespace creado:
+kubectl describe ns developers
+
+--Para acceder a nuestro dashboard a través de token:
+kubectl -n kube-system get secret
+
+
+--para amazon
+Delete the cluster y bucket
+
+kops delete cluster ${CLUSTER_FULL_NAME} --yes
+aws s3api delete-bucket --bucket ${CLUSTER_FULL_NAME}-state
+
+--Generar un entrypoint al cluster (temporal para pruebas)
+kubectl proxy
+
+--ver eventos
+kubectl get events | grep Created
+
+--describir nodo
+kubectl describe node aks-nodepool1-42582781-0
+
+kubectl get pod -o=custom-columns=NAME:.metadata.name,STATUS:.status.phase,NODE:.spec.nodeName --all-namespaces
+
+--mostrar archivos de configuracion
+kubectl config view
+
+-- see the full details of the nginx deployment
+kubectl get nodes -o yaml
+
+--ver informacion de los pods
+kubectl describe pods ${POD_NAME}
+
+--
+kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+--
+kubectl get namespaces
+
+
+
+///////////////////
+kubectl create -f https://k8s.io/examples/admin/namespace-dev.json
+
+
+--export port
+kubectl expose deployment hello-web --type=LoadBalancer --port 80 --target-port 8080
+
+kubectl scale deployment hello-web --replicas=3
+
+--ver pods en un nodo
+kubectl get pods -o wide --all-namespaces | grep aks-nodepool1-42582781-0
+
+--ver en formato yml la configuracion de un pod
+
+kubectl get pod kube-flannel-ds-amd64-2q6qt -n kube-system -o yaml
+

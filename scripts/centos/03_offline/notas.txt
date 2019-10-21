@@ -1,0 +1,99 @@
+yum install -y epel-release.noarch
+
+yum-config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+yum-config-manager --enable docker-ce-nightly
+
+/etc/environment
+
+yum makecache fast
+
+mkdir docker
+
+cd docker/
+yum downloader --resolve docker-ce
+
+rpm -ivh --replacefiles --replacepkgs *.rpm
+
+systemctl enable docker.service
+
+systemctl start docker.service
+
+nano /etc/yum.repos.d/kubernetes.repo
+
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+cd ..
+
+mkdir k8s
+
+cd k8s/
+
+yum downloader --resolve kubelet kubeadm kubectl
+
+docker images
+
+nano /etc/systemd/system/docker.service.d/http-proxy.conf
+
+[Service]
+Environment="HTTP_PROXY=http://10.214.130.110:80/" "NO_PROXY=localhost, 127.0.0.1, 123.0.0.0/8, 192.0.0.0/8, 10.0.0.0/8, 172.0.0.0/8,*.intranet.local"
+
+systemctl daemon-reload
+
+systemctl restart docker
+
+docker pull k8s.gcr.io/kube-apiserver:v1.14.1
+docker pull k8s.gcr.io/kube-controller-manager:v1.14.1
+docker pull k8s.gcr.io/kube-scheduler:v1.14.1
+docker pull k8s.gcr.io/pause:3.1
+docker pull k8s.gcr.io/etcd:3.3.10
+docker pull k8s.gcr.io/etcd:3.3.10
+docker pull k8s.gcr.io/coredns:1.3.1
+docker pull k8s.gcr.io/etcd:3.3.10
+
+nano /etc/sysctl.d/kubernetes.conf
+
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+
+modprobe br_netfilter
+sysctl --system
+swapoff -a
+
+nano /etc/fstab
+
+rpm -ivh --replacefiles --replacepkgs *.rpm
+
+source <(kubectl completion bash)
+kubectl completion bash > /etc/bash_completion.d/kubectl
+
+kubeadm init
+kubeadm reset
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+systemctl enable kubelet.service
+systemctl start kubelet.service
+
+kubectl appy -f kube-flannel.ymld7b6d9-srpzb -n kube-system
+
+/etc/hosts
+
+nano /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+at command ,add
+--allocate-node-cidrs=true
+--cluster-cidr=10.244.0.0/16
+then,reload kubelet
+
+systemctl daemon-reload
+systemctl restart docker
+

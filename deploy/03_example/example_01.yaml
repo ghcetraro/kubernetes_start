@@ -1,0 +1,707 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dash-mvn
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: backend-entry
+  labels:
+    name: backend-entry
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: backend-entry
+    spec:
+      volumes:
+        - name: mvn-self-crt
+          secret:
+            secretName: mvn-self-crt
+            defaultMode: 384
+        - name: mvn-self-key
+          secret:
+            secretName: mvn-self-key
+            defaultMode: 384
+      containers:
+        - name: backend-entry
+          image: 'dashmvncr.azurecr.io/backend-entry:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PLEASE_REDEPLOY
+              value: 77bc8945-85d9-424f-90c9-1c62c044dd1e
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+          volumeMounts:
+            - mountPath: /keys/crt
+              name: mvn-self-crt
+            - mountPath: /keys/key
+              name: mvn-self-key
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-entry
+  labels:
+    name: backend-entry
+  namespace: dash-mvn
+spec:
+  selector:
+    name: backend-entry
+  ports:
+    - port: 80
+      targetPort: 80
+      name: port-80
+    - port: 443
+      targetPort: 443
+      name: port-443
+  loadBalancerIP: 32.100.100.100
+  type: LoadBalancer
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: zipkin
+  labels:
+    name: zipkin
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: zipkin
+    spec:
+      containers:
+        - name: zipkin
+          image: 'dashmvncr.azurecr.io/zipkin:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PLEASE_REDEPLOY
+              value: 8c8decfa-2e8e-4b28-869f-c1ebeec1277a
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zipkin
+  labels:
+    name: zipkin
+  namespace: dash-mvn
+spec:
+  selector:
+    name: zipkin
+  ports:
+    - port: 9411
+      targetPort: 9411
+      name: port-9411
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    name: redis
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: redis
+    spec:
+      containers:
+        - name: redis
+          image: 'dashmvncr.azurecr.io/redis:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PLEASE_REDEPLOY
+              value: 52a98724-b2ea-4afb-9ddb-55f5aa17d107
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    name: redis
+  namespace: dash-mvn
+spec:
+  selector:
+    name: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: port-6379
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: composer
+  labels:
+    name: composer
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: composer
+    spec:
+      containers:
+        - name: composer
+          image: 'dashmvncr.azurecr.io/composer:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SECRET_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: composer
+                  key: json
+            - name: DB_HOST
+              value: dashmvndb.database.windows.net
+            - name: DB_DATABASE
+              value: composer
+            - name: DB_PORT
+              value: '1433'
+            - name: SMTP_JSON
+              value: >-
+                {"pool":true,"from":"sitio_web@mvn.com","host":"smtp.mvn.com","port":"25","name":"mvn"}
+            - name: HOST_URL
+              value: 'https://backend.mvn.com'
+            - name: PLEASE_REDEPLOY
+              value: ec959376-75ef-419e-ae97-d61ea2949558
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: composer
+  labels:
+    name: composer
+  namespace: dash-mvn
+spec:
+  selector:
+    name: composer
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: svcs
+  labels:
+    name: svcs
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: svcs
+    spec:
+      containers:
+        - name: svcs
+          image: 'dashmvncr.azurecr.io/svcs:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SECRET_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: svcs
+                  key: json
+            - name: DB_HOST
+              value: dashmvndb.database.windows.net
+            - name: DB_DATABASE
+              value: svcs
+            - name: DB_PORT
+              value: '1433'
+            - name: PLEASE_REDEPLOY
+              value: aca8133a-bbbd-4986-a760-40cd1f672795
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svcs
+  labels:
+    name: svcs
+  namespace: dash-mvn
+spec:
+  selector:
+    name: svcs
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: media-library
+  labels:
+    name: media-library
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: media-library
+    spec:
+      containers:
+        - name: media-library
+          image: 'dashmvncr.azurecr.io/media-library:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PLEASE_REDEPLOY
+              value: 1548eb18-8fe0-4cda-b6be-f472c771d393
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-library
+  labels:
+    name: media-library
+  namespace: dash-mvn
+spec:
+  selector:
+    name: media-library
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: media-library-entry
+  labels:
+    name: media-library-entry
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: media-library-entry
+    spec:
+      containers:
+        - name: media-library-entry
+          image: 'dashmvncr.azurecr.io/media-library-entry:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PLEASE_REDEPLOY
+              value: 437f05a2-1e93-46e6-b5ff-161717765ed0
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-library-entry
+  labels:
+    name: media-library-entry
+  namespace: dash-mvn
+spec:
+  selector:
+    name: media-library-entry
+  ports:
+    - port: 80
+      targetPort: 80
+      name: port-80
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: users
+  labels:
+    name: users
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: users
+    spec:
+      containers:
+        - name: users
+          image: 'dashmvncr.azurecr.io/users:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: AZURE_AD_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: azure-ad-config
+                  key: json
+            - name: ACCESS_AUTHENTICATION
+              value: AZURE
+            - name: SECRET_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: users
+                  key: json
+            - name: GLOBAL_SECRETS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: global
+                  key: json
+            - name: DB_HOST
+              value: dashmvndb.database.windows.net
+            - name: DB_DATABASE
+              value: users
+            - name: DB_PORT
+              value: '1433'
+            - name: ACTIVE_DIRECTORY_DOMAIN
+              value: undefined
+            - name: ACTIVE_DIRECTORY_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: activedirectory-config
+                  key: json
+            - name: PLEASE_REDEPLOY
+              value: 5c73de1a-e0db-4cfc-9002-d5e4293a1da8
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users
+  labels:
+    name: users
+  namespace: dash-mvn
+spec:
+  selector:
+    name: users
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: publisher
+  labels:
+    name: publisher
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: publisher
+    spec:
+      volumes:
+        - name: var-run-docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+      containers:
+        - name: publisher
+          image: 'dashmvncr.azurecr.io/publisher:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: ACR_NAME
+              value: dashmvncr
+            - name: ACR_PASSWORD
+              value: s=EBgO5G=5MIlqkjFVhNEQ2lFf4TxE64
+            - name: ACR_SERVER
+              value: dashmvncr.azurecr.io
+            - name: PUBLIC_SITE_IP
+              value: 52.224.217.21
+            - name: GLOBAL_SECRETS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: global
+                  key: json
+            - name: USER_SECRET_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: users
+                  key: json
+            - name: mvn_PLATFORM
+              value: AZURE_PROD
+            - name: OPEN_RESTY_BASE_IMAGE
+              value: 'dashmvncr.azurecr.io/open-resty-base:20190901'
+            - name: PLEASE_REDEPLOY
+              value: 81f6db91-f4a7-4911-8ab6-e2a8b5152bf5
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+          volumeMounts:
+            - mountPath: /var/run/docker.sock
+              name: var-run-docker-sock
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: publisher
+  labels:
+    name: publisher
+  namespace: dash-mvn
+spec:
+  selector:
+    name: publisher
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: backend-custom-services
+  labels:
+    name: backend-custom-services
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: backend-custom-services
+    spec:
+      containers:
+        - name: backend-custom-services
+          image: 'dashmvncr.azurecr.io/backend-custom-services:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: AZURE_AD_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: azure-ad-config
+                  key: json
+            - name: SECRET_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: backend-custom-services
+                  key: json
+            - name: DB_HOST
+              value: dashmvndb.database.windows.net
+            - name: DB_DATABASE
+              value: backend_custom_services
+            - name: DB_PORT
+              value: '1433'
+            - name: SMTP_JSON
+              value: >-
+                {"pool":true,"from":"sitio_web@mvn.com","host":"cust25737-s.out.mailcontrol.com","port":"25","name":"mvn"}
+            - name: ENDPOINT_SERVICES
+              value: 'https://prod-api-nwa.mvn.com'
+            - name: PLEASE_REDEPLOY
+              value: 3ba390a5-b816-41bc-8ed4-153934cd3678
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-custom-services
+  labels:
+    name: backend-custom-services
+  namespace: dash-mvn
+spec:
+  selector:
+    name: backend-custom-services
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: public-api
+  labels:
+    name: public-api
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: public-api
+    spec:
+      containers:
+        - name: public-api
+          image: 'dashmvncr.azurecr.io/public-api:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: BACKEND_CUSTOM_SERVICES_ENDPOINT
+              value: 'http://backend-custom-services:3000'
+            - name: COMPOSER_ENDPOINT
+              value: 'http://composer:3000'
+            - name: PLEASE_REDEPLOY
+              value: b7e6dfda-b082-40bd-9ebc-e786f15831ff
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: public-api
+  labels:
+    name: public-api
+  namespace: dash-mvn
+spec:
+  selector:
+    name: public-api
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+  type: LoadBalancer
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    name: backend
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: backend
+    spec:
+      containers:
+        - name: backend
+          image: 'dashmvncr.azurecr.io/backend:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PLEASE_REDEPLOY
+              value: 961c8ebc-c7fd-4a69-8f9b-911bfd10bc16
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    name: backend
+  namespace: dash-mvn
+spec:
+  selector:
+    name: backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: private-api
+  labels:
+    name: private-api
+  namespace: dash-mvn
+spec:
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        name: private-api
+    spec:
+      containers:
+        - name: private-api
+          image: 'dashmvncr.azurecr.io/private-api:20190901'
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: BACKEND_CUSTOM_SERVICES_ENDPOINT
+              value: 'http://backend-custom-services:3000'
+            - name: COMPOSER_ENDPOINT
+              value: 'http://composer:3000'
+            - name: BACKEND_INTRANET_ENDPOINT
+              value: 'http://backend-intranet:3000'
+            - name: MEDIA_LIBRARY_ENDPOINT
+              value: 'http://media-library:3000'
+            - name: USERS_ENDPOINT
+              value: 'http://users:3000'
+            - name: SMTP_JSON
+              value: >-
+                {"pool":true,"from":"sitio_web@mvn.com","host":"smtp.mvn.com","port":"25","name":"mvn"}
+            - name: PLEASE_REDEPLOY
+              value: 39f4d98f-8ec1-4595-85a7-36d0f3a6b944
+            - name: BUILD_SUBPROJECT
+              value: mvn_dash
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: private-api
+  labels:
+    name: private-api
+  namespace: dash-mvn
+spec:
+  selector:
+    name: private-api
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: port-3000

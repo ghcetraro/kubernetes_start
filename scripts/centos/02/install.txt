@@ -1,0 +1,80 @@
+To deploy, I followed the kubeadm instructions. Here is what I executed:
+
+# update yum packages
+yum update -y
+
+# install git, wget & docker
+yum install -y git wget nano go docker
+
+# install CRI
+rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO
+curl -s https://mirror.go-repo.io/centos/go-repo.repo | tee /etc/yum.repos.d/go-repo.repo
+yum update -y golang
+
+# start Docker
+systemctl enable docker && systemctl start docker
+
+# disable swap (not supported by kubeadm)
+swapoff -a
+
+# add kubernetes repo to yum
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+
+setenforce 0 # required to allow containers to access the host filesystem (https://www.centos.org/docs/5/html/5.2/Deployment_Guide/sec-sel-enable-disable-enforcement.html). To disable permanently: https://www.tecmint.com/disable-selinux-temporarily-permanently-in-centos-rhel-fedora/
+
+# disable firewall (I know, not great but I am fed up with opening ports and I am behind another firewall and I can do whatever I want)
+systemctl disable firewalld && systemctl stop firewalld
+
+###########
+# KUBEADM #
+###########
+
+# install kubelet, kubeadm and kubectl
+yum install -y kubelet kubeadm kubectl
+systemctl enable kubelet && systemctl start kubelet
+
+# prevent issuers with traffic being routed incorrectly due to iptables being bypassed
+cat <<EOF >  /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+
+# install CRICTL (https://github.com/kubernetes-incubator/cri-tools), required by kubeadm
+go get github.com/kubernetes-incubator/cri-tools/cmd/crictl
+
+# deploy kubernetes
+kubeadm init --pod-network-cidr=10.244.0.0/16
+
+# allow kubectl for non sudoers (run this as a regular user)
+cp /etc/kubernetes/admin.conf $HOME/
+chown $(id -u):$(id -g) $HOME/admin.conf
+export KUBECONFIG=$HOME/admin.conf
+echo 'export KUBECONFIG=$HOME/admin.conf' >> $HOME/.bashrc
+
+# For the root user, run this:
+export KUBECONFIG=/etc/kubernetes/admin.conf
+echo 'KUBECONFIG=/etc/kubernetes/admin.conf' >> $HOME/.bashrc
+
+# deploy pod network (flannel)
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.10.0/Documentation/kube-flannel.yml
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.10.0/Documentation/k8s-manifests/kube-flannel-rbac.yml
+kubectl taint nodes --all node-role.kubernetes.io/master- # allow pods to be scheduled on master
+
+###################
+# REBOOTING ISSUE #
+###################
+# At the time of writing this, rebooting causes kubernetes to no longer work. This will fix it (http://stytex.de/blog/2018/01/16/how-to-recover-self-hosted-kubeadm-kubernetes-cluster-after-reboot/)
+git clone https://github.com/xetys/k8s-self-hosted-recovery
+cd k8s-self-hosted-recovery
+chmod +x install.sh
+./install.sh
+cd ..

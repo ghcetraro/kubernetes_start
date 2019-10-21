@@ -1,0 +1,37 @@
+Configurar el proxy para docker
+
+-- crear la carpeta y el archivo
+ 
+/etc/systemd/system/docker.service.d/http-proxy.conf
+
+cotenido
+
+/////////////////////////////////////
+
+[Service]
+Environment="HTTP_PROXY=http://192.68.1.2:80/" "NO_PROXY=localhost,127.0.0.1,*.domain.local"
+
+///////////////////////////////////////////
+
+IMPORTANTE: es para la herramienta de docker y no para el contenedor. Ahi hay que volver a configurarlo
+
+nano /<home user>/.docker/config.json
+
+Example:
+
+nano /root/.docker/config.json
+
+////////////////////////////////
+
+{
+ "proxies":
+ {
+   "default":
+   {
+     "httpProxy": "http://192.68..2:80",
+     "noProxy": "*.test.example.com,.example2.com"
+   }
+ }
+}
+
+//////////////////////////////////

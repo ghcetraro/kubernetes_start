@@ -186,3 +186,6 @@ kubectl get pods -o wide --all-namespaces | grep aks-nodepool1-42582781-0
 
 kubectl get pod kube-flannel-ds-amd64-2q6qt -n kube-system -o yaml
 
+-- crear un nuevo token desde el master
+
+kubeadm token create

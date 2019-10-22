@@ -189,3 +189,11 @@ kubectl get pod kube-flannel-ds-amd64-2q6qt -n kube-system -o yaml
 -- crear un nuevo token desde el master
 
 kubeadm token create
+
+--
+
+kubectl get nodes --show-labels
+
+--add label
+
+kubectl label node uy08-08 node-role.kubernetes.io/node=

@@ -1,0 +1,32 @@
+Also on AWS default image for kops (k8s-1.8-debian-jessie-amd64-hvm-ebs-2017-12-02 (ami-bd229ec4))
+
+sudo vim /etc/sysconfig/kubelet
+add at the end of DAEMON_ARGS string:
+
+ --runtime-cgroups=/systemd/system.slice --kubelet-cgroups=/systemd/system.slice
+finally:
+
+sudo systemctl restart kubelet
+
+////////////////////////////////////////////
+
+And the above fix works for me.
+On CentOS I can add these options in /etc/systemd/system/kubelet.service.d/10-kubeadm.conf:
+
+# egrep KUBELET_CGROUP_ARGS= /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs --runtime-cgroups=/systemd/system.slice--kubelet-cgroups=/systemd/system.slice"
+
+///////////////////////////////////
+
+
+Error from server: Get https://123.176.93.18:10250/containerLogs/kube-system/kube-flannel-ds-amd64-v9f66/kube-flannel: dial tcp 123.176.93.18:10250: connect: no route to host
+
+
+
+IFACE=eth1  # change to eth1 for DO's private network
+DROPLET_IP_ADDRESS=$(ip addr show dev $IFACE | awk 'match($0,/inet (([0-9]|\.)+).* scope global/,a) { print a[1]; exit }')
+echo $DROPLET_IP_ADDRESS  # check this, just in case
+echo "KUBELET_EXTRA_ARGS=--node-ip=$DROPLET_IP_ADDRESS  " > /etc/default/kubelet
+
+systemctl daemon-reload
+systemctl restart kubelet

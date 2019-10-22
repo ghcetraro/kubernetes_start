@@ -24,6 +24,10 @@ kubectl get events
 
 kubectl expose deployment hello-node --type=LoadBalancer --port=8080
 
+kubectl expose deployment hello-node --name=clusterip --port=80 --target-port=8080
+
+kubectl expose deployment hello-node --name=nodeport --port=80 --target-port=80 --type=NodePort
+
 2.- View the Service you just created:
 
 kubectl get services

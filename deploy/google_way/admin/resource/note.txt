@@ -1,0 +1,15 @@
+Create a namespace
+
+kubectl create namespace default-mem-example
+
+Create the LimitRange in the default-mem-example namespace:
+
+kubectl apply -f https://k8s.io/examples/admin/resource/memory-defaults.yaml --namespace=default-mem-example
+
+Create the Pod.
+
+kubectl apply -f https://k8s.io/examples/admin/resource/memory-defaults-pod.yaml --namespace=default-mem-example
+
+View detailed information about the Pod:
+
+kubectl get pod default-mem-demo --output=yaml --namespace=default-mem-example

@@ -1,0 +1,22 @@
+
+kubectl apply -f https://k8s.io/examples/pods/inject/secret.yaml
+
+kubectl create secret generic test-secret --from-literal=username='my-app' --from-literal=password='39528$vdg7Jb'
+
+kubectl apply -f https://k8s.io/examples/pods/inject/secret-pod.yaml
+
+//////////
+
+kubectl create secret generic backend-user --from-literal=backend-username='backend-admin'
+
+kubectl create -f https://k8s.io/examples/pods/inject/pod-single-secret-env-variable.yaml
+
+kubectl create secret generic backend-user --from-literal=backend-username='backend-admin' 
+  
+kubectl create secret generic db-user --from-literal=db-username='db-admin' 
+
+kubectl create -f https://k8s.io/examples/pods/inject/pod-multiple-secret-env-variable.yaml
+
+kubectl create secret generic test-secret --from-literal=username='my-app' --from-literal=password='39528$vdg7Jb'
+
+kubectl create -f https://k8s.io/examples/pods/inject/pod-secret-envFrom.yaml

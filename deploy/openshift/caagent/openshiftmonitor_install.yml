@@ -1,0 +1,117 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: caagent
+  labels:
+    tier: monitoring
+    app: caagent
+    version: v1
+
+spec:
+  # oc adm policy add-scc-to-user privileged -z default
+  template:
+    metadata:
+      labels:
+        app: caagent
+    spec:
+      hostPID: true
+      hostIPC: true
+      hostNetwork: true
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - resources:
+          securityContext:
+            privileged: true
+
+          env:
+            - name: containerflow
+              value: enabled
+            - name: agentManager_url_1
+              value: https://cloudgw.dxi-na1.saas.broadcom.com:443
+            - name: agentManager_credential
+              value: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhZ2VudCI6dHJ1ZSwiZXhwIjo5MjIzMzcyMDM2ODU0Nzc1LCJ0aWQiOjU0MCwianRpIjoiMjhiZGE2OTQtNTIzMy00NDFlLWEzNjctMDA1ZDViNTJmY2RlIn0.GmgrbaeX89V9Mn28HM_vJ1X1ITBDYfJbTm10_x9HKW55HcID3PepH1duUF8-TpALQRWQBYbk4AHVuoWh9e_-eQ
+            - name: type
+              value: Openshift
+            - name: interval
+              value: "60"
+
+          name: podmonitor
+          image: docker.io/caapm/openshiftmonitor:latest
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 500m
+              memory: 700Mi
+            requests:
+              cpu: 200m
+              memory: 300Mi
+
+          volumeMounts:
+            - name: dockersock
+              mountPath: /var/run/docker.sock
+              readOnly: true
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+      volumes:
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: proc
+          hostPath:
+            path: /proc
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: caagent-deployment
+  labels:
+    tier: monitoring
+    app: caagent_v2
+    version: v1
+
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: caagent_v2
+    spec:
+      hostPID: true
+      hostIPC: true
+      hostNetwork: true
+      containers:
+        - resources:
+          securityContext:
+            privileged: true
+
+          env:
+            - name: agentManager_url_1
+              value: https://cloudgw.dxi-na1.saas.broadcom.com:443
+            - name: agentManager_credential
+              value: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJhZ2VudCI6dHJ1ZSwiZXhwIjo5MjIzMzcyMDM2ODU0Nzc1LCJ0aWQiOjU0MCwianRpIjoiMjhiZGE2OTQtNTIzMy00NDFlLWEzNjctMDA1ZDViNTJmY2RlIn0.GmgrbaeX89V9Mn28HM_vJ1X1ITBDYfJbTm10_x9HKW55HcID3PepH1duUF8-TpALQRWQBYbk4AHVuoWh9e_-eQ
+            - name: connectionurl
+              value: https://api.cluster-azure.laboshift21.com:6443
+            - name: apitoken
+              value: eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImNhYXBtLXRva2VuLW56c2RyIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImNhYXBtIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiOWQ4Njg5ZmItMjhkNS0xMWVhLTg5YzktMDAwZDNhOGUwMjg0Iiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6Y2FhcG0ifQ.I7bd8TIkwaZCoioMg9Zhe8p8EdhctwcrCzmcdvt7Ll3AKMqtwwfA3u27TcDx1l12ToovzjXF0DlZTR3EyUjbB7api3Wex1cDxvvi-o48Bgyme9D-M10Gv-3q2WjgPKKQfFjA3fP3AZLR3e20wZBjqHMtIzNEK6PijVJ3exHq3xvVGmIX48dCoZc13WOfGbTC7MnQBLqWzJknVey_S0xXx0HflT5EjSAQWCltQezWYPL3tfNrw3W_lHx_lXkYtlxdRiUASiiQKp_EiXwGRa6dsco5DuH73SA-y188LVFruPIPxpEFjr_qzOvRRZxsLLe6Dqr71pWEqjtdirQBY6gWFQ
+            - name: type
+              value: Openshift
+            - name: HostMonitoring
+              value: disabled
+            - name: MIN_HEAP_VAL_IN_MB
+              value: "400"
+            - name: MAX_HEAP_VAL_IN_MB
+              value: "800"
+
+          name: osemetainfo
+          image: docker.io/caapm/openshiftmonitor:latest
+          resources:
+            limits:
+              cpu: 700m
+              memory: 1000Mi
+            requests:
+              cpu: 400m
+              memory: 500Mi
+          imagePullPolicy: Always
